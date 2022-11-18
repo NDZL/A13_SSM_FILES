@@ -89,7 +89,7 @@
                 android:layout_marginRight="3dp"
                 android:layout_weight="0.5"
                 android:onClick="onClickQueryFile"
-                android:text="Query File" />
+                android:text="QUERY LOCAL" />
 
         </LinearLayout>
 
@@ -105,7 +105,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:onClick="onClickUpdateFile"
-                android:text="Update file"
+                android:text="UPDATE LOCAL"
                 android:layout_marginLeft="3dp"
                 android:layout_marginRight="3dp"
                 android:layout_weight="0.5"/>
@@ -115,7 +115,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:onClick="onClickDeleteFile"
-                android:text="Delete file"
+                android:text="Delete LOCAL"
                 android:layout_marginLeft="3dp"
                 android:layout_marginRight="3dp"
                 android:layout_weight="0.5"/>
@@ -127,6 +127,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="Query Result"/>
+            android:text="---"/>
     </LinearLayout>
 </ScrollView>

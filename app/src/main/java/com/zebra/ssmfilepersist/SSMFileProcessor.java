@@ -3,6 +3,7 @@ package com.zebra.ssmfilepersist;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -36,7 +37,9 @@ public class SSMFileProcessor extends AppCompatActivity {
     private final String COLUMN_DATA_PERSIST_REQUIRED = "data_persist_required";
     private final String COLUMN_TARGET_APP_PACKAGE = "target_app_package";
 
+    //read at the end of the next line!
     private final String signature = "";
+    //private final String signature = "MIIC5DCCAcwCAQEwDQYJKoZIhvcNAQEFBQAwNzEWMBQGA1UEAwwNQW5kcm9pZCBEZWJ1ZzEQMA4GA1UECgwHQW5kcm9pZDELMAkGA1UEBhMCVVMwIBcNMjIxMDEyMDk1NjM5WhgPMjA1MjEwMDQwOTU2MzlaMDcxFjAUBgNVBAMMDUFuZHJvaWQgRGVidWcxEDAOBgNVBAoMB0FuZHJvaWQxCzAJBgNVBAYTAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAha0WrWTMN8Yh40qZ9dX9f2FvyWwpdX8T0L8khTCs6bydqbKVSQOoe28g2y9uA5lbhor4nRstJwVY39TKC6v3ESQHIw2ESxoxU6oMVyqxKlOw48mW3fBGVH8A220Zm0Yo4ibmH4E61ahg5sbdxq2cfoizxCfDuRE7+78/kn/na6CdTH9vBlJ8MJpv587jsV78OI7+vT7bnd7PRmx8D3vxsEfdw0BzPA/C+hovy3y2jMFUe36wXZEn4hdIxqAIngeemFabEyAj5ViSvX6LcPdgUmlcrTyapz0QkjpJHrvOkBXwtwCntAESvVIJHkYnZHgMLSXml6MLlklybQGzGOrPRQIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQAE80M6+8TrJW/74A1DFkdE21ZetggUc47WG1U5R5HBw+6BLdHy/MZtyN1H9eL3TIICPuL4QXR6BCEp/iWzRwjukopwmwFhzCo2IgKmQpidkaFSdLutETwtp04L3PaXjbVxeGkhMVkYDjtbB6xbZx/ioShQ+bKvbmNOQxNdktyCvcx7s8BhzWtcPPmzYSFt0DEk2n4br2yWf9VUQBKgbjJpo/yoKWrCbb4Wu/WtHGOXGNy2r0FLkiocWHL7liGtAN+rpo0wRZtPoPYxxikqUY+ZOu4rXDu1WeLgbrpJjT84PKO/BJ8zfTD0F2nGZZaz3HjBikEjXxsoziZ/axBdfhmJ"; //COMPANION APP SIGNATURE
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +48,9 @@ public class SSMFileProcessor extends AppCompatActivity {
         mContext = this.getApplicationContext();
         resultView = findViewById(R.id.result);
 
-        ((EditText) findViewById(R.id.et_targetPath)).setText("com.zebra.ssmfilepersist/A.txt");
+        //choose here who to share with
+        //((EditText) findViewById(R.id.et_targetPath)).setText("com.zebra.ssmfilepersist/A.txt");
+        ((EditText) findViewById(R.id.et_targetPath)).setText("com.ndzl.sst_companionapp/A.txt");
 
         initializePersistFlagSpinner();
 
@@ -66,7 +71,9 @@ public class SSMFileProcessor extends AppCompatActivity {
         Log.i(TAG, "sourcePath " + sourcePath);
         Log.i(TAG, "*********************************");
         File file = new File(sourcePath);
-        Log.i(TAG, "file path " + file.getPath() + " lengh: " + file.length());
+        Log.i(TAG, "file path " + file.getPath() + " length: " + file.length());
+
+        StringBuilder _sb = new StringBuilder();
         if (!file.exists()) {
             Toast.makeText(mContext, "File does not exists in the source", Toast.LENGTH_SHORT).show();
         } else {
@@ -80,13 +87,16 @@ public class SSMFileProcessor extends AppCompatActivity {
                 values.put(COLUMN_DATA_TYPE, "3");
                 values.put(COLUMN_DATA_VALUE, targetPath);
                 values.put(COLUMN_DATA_PERSIST_REQUIRED, persisFlagSpinner.getSelectedItem().toString());
+
                 Uri createdRow = mContext.getContentResolver().insert(cpUriQuery, values);
                 Log.i(TAG, "SSM Insert File: " + createdRow.toString());
                 Toast.makeText(mContext, "File insert success", Toast.LENGTH_SHORT).show();
-                resultView.setText("Query Result");
+                _sb.append("Insert Result: "+createdRow+"\n" );
             } catch (Exception e) {
                 Log.e(TAG, "SSM Insert File - error: " + e.getMessage() + "\n\n");
+                _sb.append("SSM Insert File - error: " + e.getMessage() + "\n\n");
             }
+            resultView.setText(_sb);
             Log.i(TAG, "*********************************");
         }
     }
@@ -160,7 +170,7 @@ public class SSMFileProcessor extends AppCompatActivity {
                 Log.d("Client - Query", "Set test to view =  " + System.currentTimeMillis());
                 resultView.setText(strBuild);
             } else {
-                resultView.setText("No files to query");
+                resultView.setText("No files to query for local package "+getPackageName()+"\nFiles shared with other packagenames must be queried remotely");
             }
         } catch (Exception e) {
             Log.d(TAG, "Files query data error: " + e.getMessage());
@@ -211,14 +221,27 @@ public class SSMFileProcessor extends AppCompatActivity {
 
     /*------------------- Delete file from SSM --------------------*/
     public void onClickDeleteFile(View view) {
-        Uri cpUriQuery = Uri.parse(AUTHORITY_FILE + mContext.getPackageName());
+        String targetPackageName = getPackageName(); //THIS DELETION WORKS LOCALLY ONLY - REMOTE FILES, SHARED TO ANOTHER PACKAGENAME MUST BE DELETED REMOTELY
+        StringBuilder _sb = new StringBuilder();
+        _sb.append("DELETING FOR TARGET PACKAGE "+targetPackageName+"\n");
+        Uri cpUriQuery = Uri.parse(AUTHORITY_FILE +getPackageName());
         try {
-            String whereClause = COLUMN_TARGET_APP_PACKAGE + " = '" + mContext.getPackageName() + "'" + " AND " + COLUMN_DATA_PERSIST_REQUIRED + " = '" + persisFlagSpinner.getSelectedItem().toString() + "'";
+            String whereClause = COLUMN_TARGET_APP_PACKAGE + " = '" + targetPackageName + "'";
+            //String whereClause = COLUMN_TARGET_APP_PACKAGE + " = '" + targetPackageName + "'" + " AND " + COLUMN_DATA_PERSIST_REQUIRED + " = '" + persisFlagSpinner.getSelectedItem().toString() + "'";
             int deleteStatus = getContentResolver().delete(cpUriQuery, whereClause, null);
             Log.d(TAG, "File deleted, status = " + deleteStatus);
-            resultView.setText("File deleted");
+            _sb.append("Target package delete all files result="+deleteStatus+"\n");
+
+            Uri directUri =  Uri.parse("content://com.zebra.securestoragemanager.SecureFileProvider/files/com.ndzl.sst_companionapp/A.txt");
+            int deleteStatusDIRECT = getContentResolver().delete(directUri, null, null);// 0 means success
+            _sb.append("Direct target file delete result="+deleteStatusDIRECT+"\n");
+
         } catch (Exception e) {
             Log.d(TAG, "Delete file - error: " + e.getMessage());
+            _sb.append("EXCEPTION in delete result="+e.getMessage());
+
         }
+
+        resultView.setText( _sb.toString());
     }
 }
