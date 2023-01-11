@@ -4,9 +4,15 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.database.Cursor;
+import android.database.DataSetObserver;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -19,12 +25,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class SSMFileProcessor extends AppCompatActivity {
-    private static final String TAG = "SSMFileProcessor : ";
+    public static final String TAG = "SSMFileProcessor";
     Spinner persisFlagSpinner;
     Context mContext = null;
     TextView resultView;
@@ -41,6 +49,9 @@ public class SSMFileProcessor extends AppCompatActivity {
     private final String signature = "";
     //private final String signature = "MIIC5DCCAcwCAQEwDQYJKoZIhvcNAQEFBQAwNzEWMBQGA1UEAwwNQW5kcm9pZCBEZWJ1ZzEQMA4GA1UECgwHQW5kcm9pZDELMAkGA1UEBhMCVVMwIBcNMjIxMDEyMDk1NjM5WhgPMjA1MjEwMDQwOTU2MzlaMDcxFjAUBgNVBAMMDUFuZHJvaWQgRGVidWcxEDAOBgNVBAoMB0FuZHJvaWQxCzAJBgNVBAYTAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAha0WrWTMN8Yh40qZ9dX9f2FvyWwpdX8T0L8khTCs6bydqbKVSQOoe28g2y9uA5lbhor4nRstJwVY39TKC6v3ESQHIw2ESxoxU6oMVyqxKlOw48mW3fBGVH8A220Zm0Yo4ibmH4E61ahg5sbdxq2cfoizxCfDuRE7+78/kn/na6CdTH9vBlJ8MJpv587jsV78OI7+vT7bnd7PRmx8D3vxsEfdw0BzPA/C+hovy3y2jMFUe36wXZEn4hdIxqAIngeemFabEyAj5ViSvX6LcPdgUmlcrTyapz0QkjpJHrvOkBXwtwCntAESvVIJHkYnZHgMLSXml6MLlklybQGzGOrPRQIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQAE80M6+8TrJW/74A1DFkdE21ZetggUc47WG1U5R5HBw+6BLdHy/MZtyN1H9eL3TIICPuL4QXR6BCEp/iWzRwjukopwmwFhzCo2IgKmQpidkaFSdLutETwtp04L3PaXjbVxeGkhMVkYDjtbB6xbZx/ioShQ+bKvbmNOQxNdktyCvcx7s8BhzWtcPPmzYSFt0DEk2n4br2yWf9VUQBKgbjJpo/yoKWrCbb4Wu/WtHGOXGNy2r0FLkiocWHL7liGtAN+rpo0wRZtPoPYxxikqUY+ZOu4rXDu1WeLgbrpJjT84PKO/BJ8zfTD0F2nGZZaz3HjBikEjXxsoziZ/axBdfhmJ"; //COMPANION APP SIGNATURE
 
+    LocalContentObserver myContentObserver;
+    LocalDataSetObserver myDataSetObserver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +65,15 @@ public class SSMFileProcessor extends AppCompatActivity {
 
         initializePersistFlagSpinner();
 
+        //REGISTER FILE NOTIFICATION RECEIVER
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.zebra.configFile.action.notify"); //NEVER RECEIVED!!
+        //filter.addAction("com.ndzl.dw63one.READMYCODE");//received!
+        filter.addCategory("android.intent.category.DEFAULT");
+        registerReceiver(new FileNotificationReceiver(), filter);
+
+        myContentObserver = new LocalContentObserver(null);
+
     }
 
     private void initializePersistFlagSpinner() {
@@ -63,8 +83,70 @@ public class SSMFileProcessor extends AppCompatActivity {
         persisFlagSpinner.setAdapter(adapter);
     }
 
+
+    public void onClickInsertOwnGeneratedFile(View view){
+        String filename = "K.txt";
+        //CREATES A FILE LOCALLY AND SHARES IT THROUGH SSM
+        // THERE ARE MAINLY 3 OPTIONS TESTED ON A13 ON DIFFERENT PLATFORMS: Download folder, Documents folder, /enterprise
+        String sourcePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)+"/"+filename;
+        //String sourcePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)+"/"+filename;
+        //String sourcePath = "/enterprise/usr/persist"+"/"+filename;
+
+
+        try {
+            File f = new File(sourcePath);
+            if (f.exists()) {
+                f.delete();
+            }
+
+            f.createNewFile();
+            Runtime.getRuntime().exec("chmod 666 " + sourcePath); //chmod needed for /enterprise
+
+            FileOutputStream fos = new FileOutputStream(f);
+            fos.write( ("hello zebra this file has been created on "+ DateFormat.format("dd/MM/yyyy hh:mm:ss", System.currentTimeMillis() ).toString()+"\n").getBytes(StandardCharsets.UTF_8) );
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String targetPath = "com.ndzl.sst_companionapp/"+filename;
+        Log.i(TAG, "targetPath " + targetPath);
+        Log.i(TAG, "sourcePath " + sourcePath);
+        Log.i(TAG, "*********************************");
+        File file = new File(sourcePath);
+        Log.i(TAG, "file path " + file.getPath() + " length: " + file.length());
+
+        StringBuilder _sb = new StringBuilder();
+        if (!file.exists()) {
+            Toast.makeText(this, "File does not exists in the source", Toast.LENGTH_SHORT).show();
+        } else {
+            Uri cpUriQuery = Uri.parse(AUTHORITY_FILE + getPackageName());
+            Log.i(TAG, "authority  " + cpUriQuery.toString());
+
+            try {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_TARGET_APP_PACKAGE, String.format("{\"pkgs_sigs\": [{\"pkg\":\"%s\",\"sig\":\"%s\"}]}", getPackageName(), signature));
+                values.put(COLUMN_DATA_NAME, sourcePath);
+                values.put(COLUMN_DATA_TYPE, "3");
+                values.put(COLUMN_DATA_VALUE, targetPath);
+                values.put(COLUMN_DATA_PERSIST_REQUIRED, "false");
+
+                Uri createdRow = getContentResolver().insert(cpUriQuery, values);
+                Log.i(TAG, "SSM Insert File: " + createdRow.toString());
+                //Toast.makeText(this, "File insert success", Toast.LENGTH_SHORT).show();
+                _sb.append("Insert Result: "+createdRow+"\n" );
+            } catch (Exception e) {
+                Log.e(TAG, "SSM Insert File - error: " + e.getMessage() + "\n\n");
+                _sb.append("SSM Insert File - error: " + e.getMessage() + "\n\n");
+            }
+            resultView.setText(_sb);
+            Log.i(TAG, "*********************************");
+        }
+    }
+
+
     /*--------- Inserting the file to SSM -----------*/
-    public void onClickInsertFile(View view) {
+    public void onClickInsertFile3rdParty(View view) {
         String sourcePath = ((EditText) findViewById(R.id.et_sourcePath)).getText().toString();
         String targetPath = ((EditText) findViewById(R.id.et_targetPath)).getText().toString();
         Log.i(TAG, "targetPath " + targetPath);
@@ -243,5 +325,40 @@ public class SSMFileProcessor extends AppCompatActivity {
         }
 
         resultView.setText( _sb.toString());
+    }
+}
+
+class LocalContentObserver extends ContentObserver {
+    public LocalContentObserver(Handler handler) {
+        super(handler);
+    }
+
+    @Override
+    public void onChange(boolean selfChange) {
+        this.onChange(selfChange, null);
+        Log.d(SSMFileProcessor.TAG, "### received self change notification from uri: ");
+    }
+
+    @Override
+    public void onChange(boolean selfChange, Uri uri) { //called on insert/delete etc.
+        Log.d(SSMFileProcessor.TAG, "### received notification from uri: " + uri.toString());
+    }
+}
+
+class LocalDataSetObserver extends DataSetObserver {
+    public LocalDataSetObserver() {
+
+    }
+
+    @Override
+    public void onInvalidated() { //linked to cursors lifecycle - see the update api implementation
+        super.onInvalidated();
+        Log.d(SSMFileProcessor.TAG, "onInvalidate");
+    }
+
+    @Override
+    public void onChanged() {
+        super.onChanged();
+        Log.d(SSMFileProcessor.TAG, "onChanged");
     }
 }

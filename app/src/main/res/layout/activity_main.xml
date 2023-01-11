@@ -39,7 +39,7 @@
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_sourcePath"
                 android:layout_width="match_parent"
-                android:text="/sdcard/Android/data/A.txt"
+                android:text="/sdcard/Download/A.txt"
                 android:layout_height="wrap_content"
                 android:textSize="15sp"/>
 
@@ -78,8 +78,8 @@
                 android:layout_marginLeft="3dp"
                 android:layout_marginRight="3dp"
                 android:layout_weight="0.5"
-                android:onClick="onClickInsertFile"
-                android:text="Insert File" />
+                android:onClick="onClickInsertFile3rdParty"
+                android:text="Insert File ABOVE" />
 
             <Button
                 android:id="@+id/btn_query"
@@ -105,7 +105,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:onClick="onClickUpdateFile"
-                android:text="UPDATE LOCAL"
+                android:text="UPDATE locally"
                 android:layout_marginLeft="3dp"
                 android:layout_marginRight="3dp"
                 android:layout_weight="0.5"/>
@@ -115,13 +115,31 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:onClick="onClickDeleteFile"
-                android:text="Delete LOCAL"
+                android:text="DEL locally"
                 android:layout_marginLeft="3dp"
                 android:layout_marginRight="3dp"
                 android:layout_weight="0.5"/>
 
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginRight="3dp"
+            android:layout_marginLeft="3dp">
+
+            <Button
+                android:id="@+id/btn_insertOwnGeneratedFile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="onClickInsertOwnGeneratedFile"
+                android:text="INSERT OWN FILE"
+                android:layout_marginLeft="3dp"
+                android:layout_marginRight="3dp"
+                android:layout_weight="0.5"/>
+
+        </LinearLayout>
         <TextView
             android:id="@+id/result"
             android:layout_width="wrap_content"

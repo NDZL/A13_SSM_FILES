@@ -26,12 +26,7 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".ConfigFileReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.zebra.configFile.action.notify" />
-            </intent-filter>
-        </receiver>
+
 
         <provider
             android:name="androidx.core.content.FileProvider"
